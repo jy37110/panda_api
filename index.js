@@ -10,11 +10,14 @@ exports.handler = (event, context, callback) => {
             case "Login":
                 loginHandler(event, callback);
                 break;
-            case "Create User":
-                createUserHandler(event, callback);
-                break;
             case "Create Invoice":
                 createInvoiceHandler(event, callback);
+                break;
+            case "Delete Invoice":
+                deleteInvoiceHandler(event, callback);
+                break;
+            case "Get Invoices":
+                getInvoiceHandler(event, callback);
                 break;
             default:
                 invalidInputHandler(callback);
@@ -54,9 +57,7 @@ const loginHandler = (inputObj, callback) => {
         });
     }
 };
-const createUserHandler = (inputObj, callback) => {
 
-};
 const invalidInputHandler = (callback) => {
     let result = {
         IsSuccess : false,
@@ -81,14 +82,14 @@ const createInvoiceHandler = (inputObj, callback) => {
     } else {
         let params = {
             TableName: 'invoice',
-            Item:{
+            Item: {
                 'invoice_id': {S: uuidv1().toString()},
                 'amount_by_day': {N: inputObj.Data.amountByDay.toString()},
                 'duration': {S: inputObj.Data.duration},
                 'happened_at': {S: inputObj.Data.happenedAt},
                 'name': {S: inputObj.Data.name},
                 'total_amount': {N: inputObj.Data.totalAmount.toString()},
-                'user_id': {N: token.Data.id.N.toString()},
+                'user_id': {S: token.Data.id.S},
                 'user_name': {S: token.Data.name.S},
                 'category': {S: inputObj.Data.category}
             }
@@ -103,3 +104,44 @@ const createInvoiceHandler = (inputObj, callback) => {
     }
 };
 
+const deleteInvoiceHandler = (inputObj, callback) => {
+    let token = tokenValidator(inputObj.Token);
+    if(!token.IsSuccess){
+        callback({IsSuccess: false, ErrorMessage: token.ErrorMessage});
+    } else {
+        let params = {
+            TableName: 'invoice',
+            Key: {
+                'invoice_id': {S: inputObj.Data.invoiceId}
+            }
+        };
+        db.deleteItem(params, function(err, data){
+            if(err){
+                callback({IsSuccess: false, ErrorMessage: err});
+            } else {
+                callback({IsSuccess: true, Data: data});
+            }
+        });
+    }
+};
+
+const getInvoiceHandler = (inputObj, callback) => {
+    let token = tokenValidator(inputObj.Token);
+    if(!token.IsSuccess){
+        callback({IsSuccess: false, ErrorMessage: token.ErrorMessage});
+    } else {
+        let userId = token.Data.id.S;
+        let params = {
+            TableName: 'invoice',
+            FilterExpression: 'user_id = :user_id_val',
+            ExpressionAttributeValues:{':user_id_val': {S: userId}}
+        };
+        db.scan(params, function(err, data){
+            if(err){
+                callback({IsSuccess: false, ErrorMessage: err});
+            } else {
+                callback({IsSuccess: true, Data: data.Items});
+            }
+        });
+    }
+};
