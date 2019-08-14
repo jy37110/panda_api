@@ -12,6 +12,8 @@
   "author": "jesse",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.509.0"
+    "aws-sdk": "^2.509.0",
+    "jsonwebtoken": "^8.5.1",
+    "uuid": "^3.3.2"
   }
 }
