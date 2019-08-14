@@ -1,44 +1,61 @@
-const AWS = require('aws-sdk');
+const credential = require('./credential.js');
+const AWS = credential.updateCredential();
 const db = new AWS.DynamoDB({apiVersion: '2012-08-10'});
 
 exports.handler = (event, context, callback) => {
-    let result = {};
-    if(event.hasOwnProperty('Type')){
-        if(event.Type === "Login"){
-            let params = {
-                TableName: 'panda_user',
-                Key: {
-                    'user_id': {N: event.Data.Id.toString()}
-                }
-            };
-            db.getItem(params, function(err, data){
-                if(err){
-                    result.IsSuccess = false;
-                    result.errorMessage = err;
-                    callback(null, result);
-                } else {
-                    console.log(data);
-                    if(data.Item == null){
-                        result.IsSuccess = false;
-                        result.errorMessage = "User id not found";
-                    } else {
-                        if(data.Item.password.S === event.Data.Password){
-                            result.IsSuccess = true;
-                            result.Data = data.Item;
-                        } else {
-                            result.IsSuccess = false;
-                            result.errorMessage = "The Password is Invalid";
-                        }
-                    }
-                    callback(null, result);
-                }
-
-            });
+    if(event.hasOwnProperty('Action')){
+        switch (event.Action) {
+            case "Login":
+                loginHandler(event, callback);
+                break;
+            case "Create User":
+                createUserHandler();
+                break;
+            default:
+                invalidInputHandler(callback);
         }
     } else {
-        result.IsSuccess = false;
-        result.errorMessage = "Invalid Params";
-        callback(null, result);
+        invalidInputHandler(callback);
     }
+};
+
+const loginHandler = (inputObj, callback) => {
+    let userId = inputObj.Data.Id.toString();
+    let password = inputObj.Data.Password;
+    if(userId === undefined || password === undefined){
+        invalidInputHandler(callback);
+    } else {
+        let params = {
+            TableName: 'panda_user',
+            Key: {
+                'user_id': {N: userId}
+            }
+        };
+        db.getItem(params, function(err, data){
+            if(err){
+                callback({IsSuccess: false, ErrorMessage: err});
+            } else {
+                if(data.Item == null){
+                    callback({IsSuccess: false, ErrorMessage: "User id not found"});
+                } else {
+                    if(data.Item.password.S === password){
+                        callback({IsSuccess: true, Data: data.Item});
+                    } else {
+                        callback({IsSuccess: false, ErrorMessage:" The Password is Invalid"});
+                    }
+                }
+            }
+        });
+    }
+};
+const createUserHandler = () => {
 
 };
+const invalidInputHandler = (callback) => {
+    let result = {
+        IsSuccess : false,
+        ErrorMessage: "Invalid Params"
+    };
+    callback(result);
+};
+
