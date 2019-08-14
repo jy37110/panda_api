@@ -1,0 +1,17 @@
+{
+  "name": "panda_budget",
+  "version": "1.0.0",
+  "description": "panda budget api",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm test"
+  },
+  "keywords": [
+    "panda"
+  ],
+  "author": "jesse",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.509.0"
+  }
+}
