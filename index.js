@@ -1,5 +1,6 @@
-const credential = require('./credential.js');
-const AWS = credential.updateCredential();
+const AWS = require('aws-sdk');
+// const credential = require('./credential.js');
+// const AWS = credential.updateCredential();
 const db = new AWS.DynamoDB({apiVersion: '2012-08-10'});
 const jwt = require('jsonwebtoken');
 const uuidv1 = require('uuid/v1');
@@ -41,16 +42,16 @@ const loginHandler = (inputObj, callback) => {
         };
         db.getItem(params, function(err, data){
             if(err){
-                callback({IsSuccess: false, ErrorMessage: err});
+                callback(err);
             } else {
                 if(data.Item == null){
-                    callback({IsSuccess: false, ErrorMessage: "User id not found"});
+                    callback(new Error("User id not found"));
                 } else {
                     if(data.Item.password.S === password){
                         let token = jwt.sign({id: data.Item.user_id, name: data.Item.name},'panda_secret',{expiresIn: '30d'});
-                        callback({IsSuccess: true, Data: token});
+                        callback(null, {IsSuccess: true, Data: token});
                     } else {
-                        callback({IsSuccess: false, ErrorMessage:" The Password is Invalid"});
+                        callback(new Error("The Password is invalid"));
                     }
                 }
             }
@@ -59,11 +60,7 @@ const loginHandler = (inputObj, callback) => {
 };
 
 const invalidInputHandler = (callback) => {
-    let result = {
-        IsSuccess : false,
-        ErrorMessage: "Invalid Params"
-    };
-    callback(result);
+    callback(new Error("Invalid Params"));
 };
 
 const tokenValidator = (token) => {
@@ -78,7 +75,7 @@ const tokenValidator = (token) => {
 const createInvoiceHandler = (inputObj, callback) => {
     let token = tokenValidator(inputObj.Token);
     if(!token.IsSuccess){
-        callback({IsSuccess: false, ErrorMessage: token.ErrorMessage});
+        callback(new Error(token.ErrorMessage));
     } else {
         let params = {
             TableName: 'invoice',
@@ -96,9 +93,9 @@ const createInvoiceHandler = (inputObj, callback) => {
         };
         db.putItem(params, function(err, data){
             if(err){
-                callback({IsSuccess: false, ErrorMessage: err});
+                callback(err);
             } else {
-                callback({IsSuccess: true, Data: data});
+                callback(null, {IsSuccess: true, Data: data});
             }
         });
     }
@@ -107,7 +104,7 @@ const createInvoiceHandler = (inputObj, callback) => {
 const deleteInvoiceHandler = (inputObj, callback) => {
     let token = tokenValidator(inputObj.Token);
     if(!token.IsSuccess){
-        callback({IsSuccess: false, ErrorMessage: token.ErrorMessage});
+        callback(new Error(token.ErrorMessage));
     } else {
         let params = {
             TableName: 'invoice',
@@ -117,9 +114,9 @@ const deleteInvoiceHandler = (inputObj, callback) => {
         };
         db.deleteItem(params, function(err, data){
             if(err){
-                callback({IsSuccess: false, ErrorMessage: err});
+                callback(err);
             } else {
-                callback({IsSuccess: true, Data: data});
+                callback(null, {IsSuccess: true, Data: data});
             }
         });
     }
@@ -128,7 +125,7 @@ const deleteInvoiceHandler = (inputObj, callback) => {
 const getInvoiceHandler = (inputObj, callback) => {
     let token = tokenValidator(inputObj.Token);
     if(!token.IsSuccess){
-        callback({IsSuccess: false, ErrorMessage: token.ErrorMessage});
+        callback(new Error(token.ErrorMessage));
     } else {
         let userId = token.Data.id.S;
         let params = {
@@ -138,9 +135,9 @@ const getInvoiceHandler = (inputObj, callback) => {
         };
         db.scan(params, function(err, data){
             if(err){
-                callback({IsSuccess: false, ErrorMessage: err});
+                callback(err);
             } else {
-                callback({IsSuccess: true, Data: data.Items});
+                callback(null, {IsSuccess: true, Data: data.Items});
             }
         });
     }
