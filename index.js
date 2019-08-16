@@ -49,7 +49,11 @@ const loginHandler = (inputObj, callback) => {
                 } else {
                     if(data.Item.password.S === password){
                         let token = jwt.sign({id: data.Item.user_id, name: data.Item.name},'panda_secret',{expiresIn: '30d'});
-                        callback(null, {IsSuccess: true, Data: token});
+                        callback(null, {
+                            statusCode: 200,
+                            body: {"IsSuccess": true, "Data": token},
+                            headers:{"Access-Control-Allow-Origin": "*"}
+                        });
                     } else {
                         callback(new Error("The Password is invalid"));
                     }
